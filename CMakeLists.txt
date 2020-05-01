@@ -4,20 +4,31 @@ project(contact_interface)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  sensor_msgs
+  geometry_msgs
   message_generation
   mav_msgs
 )
 
 find_package(base)
 
-generate_messages(DEPENDENCIES std_msgs)
+add_message_files(
+  FILES
+  ContactCommand.msg
+  ContactStatus.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs 
+  geometry_msgs 
+)
 
 catkin_package()
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS rospy roscpp std_msgs
+  CATKIN_DEPENDS rospy roscpp std_msgs geometry_msgs
+
 )
 
 include_directories(
