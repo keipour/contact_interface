@@ -12,7 +12,6 @@ bool ContactInterfaceNode::initialize(){
   status_pub_rate = pnh->param("contact_status_pub_rate", 20.);
 
   // init subscribers
-  // state_sub = nh->subscribe<mavros_msgs::State>("mavros/state", 10, &ContactInterfaceNode::state_callback, this);
   pose_sub = nh->subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, &ContactInterfaceNode::pose_callback, this);
   mode_sub = nh->subscribe<std_msgs::Bool>("has_control", 10, &ContactInterfaceNode::mode_callback, this);
   arm_sub = nh->subscribe<std_msgs::Bool>("is_armed", 10, &ContactInterfaceNode::arm_callback, this);
@@ -28,8 +27,38 @@ bool ContactInterfaceNode::initialize(){
 
 bool ContactInterfaceNode::execute()
 {
-  // ros::Time::now() - last_request > ros::Duration(5.0))
-  
+  // return if it's not in offboard mode or if it's not armed
+  if (!is_offboard || !is_armed)
+  {
+    // just return if all the parameters are already set correctly
+    if (contact_status == ContactStatus::None && task_status != TaskStatus::InProgress)
+      return true;
+    
+    contact_status = ContactStatus::None;
+    if (task_status == TaskStatus::InProgress)
+      task_status = TaskStatus::Aborted;
+
+    current_force = 0;
+    current_moment = 0;
+
+    publish_status();
+    return true;
+  }
+
+  switch (contact_status)
+  {
+  case ContactStatus::Approaching :
+    approach();
+    break;
+  case ContactStatus::InContact :
+    contact();
+    break;
+  case ContactStatus::Departing :
+    depart();
+    break;
+  default:
+    break;
+  }
   return true;
 }
 
@@ -48,10 +77,6 @@ void ContactInterfaceNode::pose_callback(const geometry_msgs::PoseStamped::Const
   current_pose = *msg;
 }
 
-// void ContactInterfaceNode::state_callback(const mavros_msgs::State::ConstPtr &msg)
-// {
-// }
-
 void ContactInterfaceNode::contact_command_callback(const contact_interface::ContactCommand::ConstPtr &msg)
 {
   // return if it's not in offboard mode or if it's not armed
@@ -63,7 +88,13 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
     return;
   }
   
+  starting_pose = current_pose;
   current_command = *msg;
+
+  // For now, just go 2m towards north as the contact point
+  current_command.ContactPoint = current_pose.pose;
+  current_command.ContactPoint.position.x += 2;
+
   task_status = TaskStatus::InProgress;
   contact_status = ContactStatus::Approaching;
 }
@@ -88,6 +119,74 @@ void ContactInterfaceNode::publish_status()
 void ContactInterfaceNode::status_publisher_timer_callback(const ros::TimerEvent &te)
 {
   publish_status();
+}
+
+void ::ContactInterfaceNode::publish_pose_command(const geometry_msgs::Pose &pose)
+{
+  geometry_msgs::PoseStamped msg;
+  msg.header.frame_id = current_command.Header.frame_id;
+  msg.header.seq = 0;
+  msg.header.stamp = ros::Time::now();
+  msg.pose = pose;
+
+  pose_command_pub.publish(msg);
+}
+
+void ContactInterfaceNode::approach()
+{
+  current_force = 0;
+  current_moment = 0;
+  
+  double dx = current_pose.pose.position.x - current_command.ContactPoint.position.x;
+  double dy = current_pose.pose.position.y - current_command.ContactPoint.position.y;
+  double dz = current_pose.pose.position.z - current_command.ContactPoint.position.z;
+  double dist = dx*dx + dy*dy + dz*dz;
+
+  const double dist_threshold = 0.25F; // 25 cm
+  if (dist > dist_threshold * dist_threshold)
+  {
+    publish_pose_command(current_command.ContactPoint);
+  }
+  else
+  {
+    contact_started = ros::Time::now();
+    contact_status = ContactStatus::InContact;
+  }
+}
+
+void ContactInterfaceNode::contact()
+{
+  const float contact_duration = 5; // in seconds
+  current_force = current_command.Force; // in Newtons
+  current_moment = current_command.Moment; // in N.m
+
+  if (ros::Time::now() - contact_started > ros::Duration(contact_duration))
+  {
+    contact_status = ContactStatus::Departing;
+  }
+
+}
+
+void ContactInterfaceNode::depart()
+{
+  current_force = 0;
+  current_moment = 0;
+
+  double dx = current_pose.pose.position.x - starting_pose.pose.position.x;
+  double dy = current_pose.pose.position.y - starting_pose.pose.position.y;
+  double dz = current_pose.pose.position.z - starting_pose.pose.position.z;
+  double dist = dx * dx + dy * dy + dz * dz;
+
+  const double dist_threshold = 0.25F; // 25 cm
+  if (dist > dist_threshold * dist_threshold)
+  {
+    publish_pose_command(starting_pose.pose);
+  }
+  else
+  {
+    contact_status = ContactStatus::None;
+    task_status = TaskStatus::Completed;
+  }
 }
 
 ContactInterfaceNode::~ContactInterfaceNode() = default;

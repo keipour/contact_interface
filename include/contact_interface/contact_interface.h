@@ -43,6 +43,9 @@ private:
   geometry_msgs::PoseStamped current_pose;
   contact_interface::ContactCommand current_command;
 
+  ros::Time contact_started;
+  geometry_msgs::PoseStamped starting_pose;
+
   // subscribers
   ros::Subscriber mode_sub, arm_sub, state_sub, pose_sub, contact_command_sub;
   ros::Timer status_publisher_timer;
@@ -54,15 +57,15 @@ private:
   void mode_callback(const std_msgs::Bool::ConstPtr &msg);
   void arm_callback(const std_msgs::Bool::ConstPtr &msg);
   void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
-  void state_callback(const mavros_msgs::State::ConstPtr &msg);
   void contact_command_callback(const contact_interface::ContactCommand::ConstPtr &msg);
   void status_publisher_timer_callback(const ros::TimerEvent &te);
 
   // functions
   void publish_status();
-  void contact_approach();
-  void contact_depart();
-  void contact_contact();
+  void publish_pose_command(const geometry_msgs::Pose &pose);
+  void approach();
+  void depart();
+  void contact();
 
 public:
   ContactInterfaceNode(std::string node_name);
