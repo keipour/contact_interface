@@ -1,7 +1,7 @@
-Header header
-float32 applied_force       # The amount of force currently being applied on the contact point
-float32 applied_moment      # The amount of torque currently being on the contact point
-geometry_msgs/Pose end_effector_pose    # The coordinates of the end effector
+Header Header
+float32 AppliedForce       # The amount of force currently being applied on the contact point
+float32 AppliedMoment      # The amount of torque currently being on the contact point
+geometry_msgs/Pose EndEffectorPose    # The coordinates of the end effector
 int8 ContactStatus          # The status of the contact controller
 int8 TaskStatus             # The status of the current or last commanded task
 

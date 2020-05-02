@@ -29,12 +29,23 @@ private:
     Aborted = contact_interface::ContactStatus::TASK_ABORTED
   };
 
+  // parameters
+  float status_pub_rate;
+
   // variables
   bool is_offboard = false;
   bool is_armed = false;
+  ContactStatus contact_status = ContactStatus::None;
+  int contact_status_seq = 0;
+  TaskStatus task_status = TaskStatus::NotReceived;
+  float current_force = 0.F;
+  float current_moment = 0.F;
+  geometry_msgs::PoseStamped current_pose;
+  contact_interface::ContactCommand current_command;
 
   // subscribers
   ros::Subscriber mode_sub, arm_sub, state_sub, pose_sub, contact_command_sub;
+  ros::Timer status_publisher_timer;
 
   // publishers
   ros::Publisher pose_command_pub, contact_status_pub;
@@ -45,6 +56,13 @@ private:
   void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
   void state_callback(const mavros_msgs::State::ConstPtr &msg);
   void contact_command_callback(const contact_interface::ContactCommand::ConstPtr &msg);
+  void status_publisher_timer_callback(const ros::TimerEvent &te);
+
+  // functions
+  void publish_status();
+  void contact_approach();
+  void contact_depart();
+  void contact_contact();
 
 public:
   ContactInterfaceNode(std::string node_name);
@@ -52,7 +70,6 @@ public:
   virtual bool initialize();
   virtual bool execute();
   virtual ~ContactInterfaceNode();
-
 };
 
 #endif

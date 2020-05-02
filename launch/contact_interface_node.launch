@@ -1,4 +1,5 @@
 <launch>
   <node name="contact_interface" pkg="contact_interface" type="contact_interface_node" output="screen">
+      <param name="execute_target" type="double" value="20." />
   </node>
 </launch>
