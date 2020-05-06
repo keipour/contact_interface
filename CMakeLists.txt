@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(contact_interface)
+add_compile_options("-Wno-unused-parameter")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
