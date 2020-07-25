@@ -88,13 +88,25 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
     return;
   }
   
+  // Set the starting point to return to it later
   starting_pose = current_pose;
   current_command = *msg;
 
   // For now, just go 2m towards north as the contact point
+  double dist_forward = 2; // in meters, the distance to travel forward
   current_command.ContactPoint = current_pose.pose;
-  current_command.ContactPoint.position.x += 2;
 
+  // Get the current yaw
+  tf::Quaternion q(current_pose.pose.orientation.x, current_pose.pose.orientation.y, current_pose.pose.orientation.z, current_pose.pose.orientation.w);
+  double roll, pitch, yaw_enu;
+  tf::Matrix3x3(q).getRPY(roll, pitch, yaw_enu);
+  double yaw = M_PI / 2 - yaw_enu;
+
+  // Set the destination as a few meters forward in the direction of the current yaw
+  current_command.ContactPoint.position.x += dist_forward * std::sin(yaw);
+  current_command.ContactPoint.position.y += dist_forward * std::cos(yaw);
+
+  // Set the task and contact statuses
   task_status = TaskStatus::InProgress;
   contact_status = ContactStatus::Approaching;
 }

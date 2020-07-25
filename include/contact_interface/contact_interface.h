@@ -8,6 +8,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <contact_interface/ContactCommand.h>
 #include <contact_interface/ContactStatus.h>
+#include <tf/transform_datatypes.h>
 
 class ContactInterfaceNode : public BaseNode 
 {
