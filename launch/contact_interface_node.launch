@@ -1,5 +1,8 @@
 <launch>
   <node name="contact_interface" pkg="contact_interface" type="contact_interface_node" output="screen">
       <param name="execute_target" type="double" value="20." />
+      <param name="contact_status_pub_rate" type="double" value="20." />
+      <param name="distance_step" type="double" value="20" />
+      <param name="stop_distance" type="double" value="0.2" />
   </node>
 </launch>

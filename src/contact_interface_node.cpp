@@ -10,6 +10,8 @@ bool ContactInterfaceNode::initialize(){
 
   // init parameters
   status_pub_rate = pnh->param("contact_status_pub_rate", 20.);
+  distance_step = pnh->param("distance_step", 0.1F);
+  stop_distance = pnh->param("stop_distance", 0.2F);
 
   // init subscribers
   pose_sub = nh->subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, &ContactInterfaceNode::pose_callback, this);
@@ -94,19 +96,8 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
   starting_pose = current_pose;
   current_command = *msg;
 
-  // For now, just go 2m towards north as the contact point
-  double dist_forward = 2; // in meters, the distance to travel forward
-  current_command.ContactPoint = current_pose.pose;
-
-  // Get the current yaw
-  tf::Quaternion q(current_pose.pose.orientation.x, current_pose.pose.orientation.y, current_pose.pose.orientation.z, current_pose.pose.orientation.w);
-  double roll, pitch, yaw_enu;
-  tf::Matrix3x3(q).getRPY(roll, pitch, yaw_enu);
-  double yaw = M_PI / 2 - yaw_enu;
-
-  // Set the destination as a few meters forward in the direction of the current yaw
-  current_command.ContactPoint.position.x += dist_forward * std::sin(yaw);
-  current_command.ContactPoint.position.y += dist_forward * std::cos(yaw);
+  // Fly forward a bit
+  fly_forward(distance_step);
 
   // Set the task and contact statuses
   task_status = TaskStatus::InProgress;
@@ -115,12 +106,42 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
 
 void ContactInterfaceNode::depth_callback(const geometry_msgs::Vector3Stamped::ConstPtr &msg)
 {
-  //current_pose = *msg;
+  // return if it's not in offboard mode or if it's not armed
+  if (contact_status != ContactStatus::Approaching || task_status != TaskStatus::InProgress)
+    return;
+
+  // Read the current distance from the wall
+  float dist = msg->vector.z;
+
+  if (isnan(dist)) 
+    return;
+
+  if (dist <= stop_distance)
+    return;
+
+  double dist_forward = std::min(dist - stop_distance, distance_step);
+
+  fly_forward(dist_forward);
 }
 
 void ContactInterfaceNode::heading_callback(const std_msgs::Float32::ConstPtr &msg)
 {
   //current_pose = *msg;
+}
+
+void ContactInterfaceNode::fly_forward(const double dist_forward)
+{
+  current_command.ContactPoint = current_pose.pose;
+
+  // Get the current yaw
+  tf::Quaternion q(current_pose.pose.orientation.x, current_pose.pose.orientation.y, current_pose.pose.orientation.z, current_pose.pose.orientation.w);
+  double roll, pitch, yaw_enu;
+  tf::Matrix3x3(q).getRPY(roll, pitch, yaw_enu);
+  double yaw = M_PI / 2 - yaw_enu;
+
+  // Set the destination as a bit forward in the direction of the current yaw
+  current_command.ContactPoint.position.x += dist_forward * std::sin(yaw);
+  current_command.ContactPoint.position.y += dist_forward * std::cos(yaw);
 }
 
 void ContactInterfaceNode::publish_status()

@@ -34,6 +34,8 @@ private:
 
   // parameters
   float status_pub_rate;
+  float distance_step;
+  float stop_distance;
 
   // variables
   bool is_offboard = false;
@@ -71,6 +73,7 @@ private:
   void approach();
   void depart();
   void contact();
+  void fly_forward(const double dist_forward);
 
 public:
   ContactInterfaceNode(std::string node_name);
