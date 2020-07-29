@@ -4,8 +4,10 @@
 #include <base/BaseNode.h>
 #include <string>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
 #include <mavros_msgs/State.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <contact_interface/ContactCommand.h>
 #include <contact_interface/ContactStatus.h>
 #include <tf/transform_datatypes.h>
@@ -43,12 +45,12 @@ private:
   float current_moment = 0.F;
   geometry_msgs::PoseStamped current_pose;
   contact_interface::ContactCommand current_command;
-
+  
   ros::Time contact_started;
   geometry_msgs::PoseStamped starting_pose;
 
   // subscribers
-  ros::Subscriber mode_sub, arm_sub, state_sub, pose_sub, contact_command_sub;
+  ros::Subscriber mode_sub, arm_sub, state_sub, pose_sub, contact_command_sub, depth_sub, heading_sub;
   ros::Timer status_publisher_timer;
 
   // publishers
@@ -59,6 +61,8 @@ private:
   void arm_callback(const std_msgs::Bool::ConstPtr &msg);
   void pose_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
   void contact_command_callback(const contact_interface::ContactCommand::ConstPtr &msg);
+  void depth_callback(const geometry_msgs::Vector3Stamped::ConstPtr &msg);
+  void heading_callback(const std_msgs::Float32::ConstPtr &msg);
   void status_publisher_timer_callback(const ros::TimerEvent &te);
 
   // functions

@@ -15,6 +15,8 @@ bool ContactInterfaceNode::initialize(){
   pose_sub = nh->subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, &ContactInterfaceNode::pose_callback, this);
   mode_sub = nh->subscribe<std_msgs::Bool>("has_control", 10, &ContactInterfaceNode::mode_callback, this);
   arm_sub = nh->subscribe<std_msgs::Bool>("is_armed", 10, &ContactInterfaceNode::arm_callback, this);
+  heading_sub = nh->subscribe<std_msgs::Float32>("point_cloud/heading_angle", 10, &ContactInterfaceNode::heading_callback, this);
+  depth_sub = nh->subscribe<geometry_msgs::Vector3Stamped>("point_cloud/pose", 10, &ContactInterfaceNode::depth_callback, this);
   contact_command_sub = nh->subscribe<contact_interface::ContactCommand>("controller/contact/command", 10, &ContactInterfaceNode::contact_command_callback, this);
   status_publisher_timer = nh->createTimer(ros::Duration(1. / status_pub_rate), &ContactInterfaceNode::status_publisher_timer_callback, this);
 
@@ -109,6 +111,16 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
   // Set the task and contact statuses
   task_status = TaskStatus::InProgress;
   contact_status = ContactStatus::Approaching;
+}
+
+void ContactInterfaceNode::depth_callback(const geometry_msgs::Vector3Stamped::ConstPtr &msg)
+{
+  //current_pose = *msg;
+}
+
+void ContactInterfaceNode::heading_callback(const std_msgs::Float32::ConstPtr &msg)
+{
+  //current_pose = *msg;
 }
 
 void ContactInterfaceNode::publish_status()
