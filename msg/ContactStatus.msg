@@ -9,6 +9,7 @@ int8 CONTACT_NONE=0         # The drone is not in the contact control mode
 int8 CONTACT_APPROACH=1     # The drone is approaching the contact point
 int8 CONTACT_CONTACT=2      # The end effector is in contact
 int8 CONTACT_DEPART=3       # The drone is backing off after the contact
+int8 CONTACT_WAITING=5      # The drone is waiting for the depth data
 
 int8 TASK_NONE=0            # No task is received yet
 int8 TASK_IN_PROGRESS=1     # The current task is in progress

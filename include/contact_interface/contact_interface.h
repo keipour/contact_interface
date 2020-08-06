@@ -21,7 +21,8 @@ private:
     None = contact_interface::ContactStatus::CONTACT_NONE,
     Approaching = contact_interface::ContactStatus::CONTACT_APPROACH,
     InContact = contact_interface::ContactStatus::CONTACT_CONTACT,
-    Departing = contact_interface::ContactStatus::CONTACT_DEPART
+    Departing = contact_interface::ContactStatus::CONTACT_DEPART,
+    Waiting = contact_interface::ContactStatus::CONTACT_WAITING
   };
 
   enum TaskStatus

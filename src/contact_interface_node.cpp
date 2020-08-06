@@ -96,31 +96,38 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
   starting_pose = current_pose;
   current_command = *msg;
 
-  // Fly forward a bit
-  fly_forward(distance_step);
-
   // Set the task and contact statuses
   task_status = TaskStatus::InProgress;
-  contact_status = ContactStatus::Approaching;
+  contact_status = ContactStatus::Waiting;
 }
 
 void ContactInterfaceNode::depth_callback(const geometry_msgs::Vector3Stamped::ConstPtr &msg)
 {
   // return if it's not in offboard mode or if it's not armed
-  if (contact_status != ContactStatus::Approaching || task_status != TaskStatus::InProgress)
+%  ROS_WARN("Got it!");
+  if ((contact_status != ContactStatus::Approaching && contact_status != ContactStatus::Waiting)
+   || task_status != TaskStatus::InProgress)
     return;
 
   // Read the current distance from the wall
-  float dist = msg->vector.z;
+  float dist = msg->vector.z / 100.F;
+%  ROS_WARN("Looks good! %0.3lf", dist);
 
   if (isnan(dist)) 
     return;
 
   if (dist <= stop_distance)
+  {
+%    ROS_WARN("Ooooops! %0.3f", dist);
+    contact_started = ros::Time::now();
+    contact_status = ContactStatus::InContact;
     return;
+  }
 
+  contact_status = ContactStatus::Approaching;
+  
   double dist_forward = std::min(dist - stop_distance, distance_step);
-
+%  ROS_WARN("Yaaaay! %0.3lf", dist_forward);
   fly_forward(dist_forward);
 }
 
