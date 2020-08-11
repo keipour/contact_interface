@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   mav_msgs
+  core_px4_interface
 )
 
 find_package(base)

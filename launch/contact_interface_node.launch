@@ -3,6 +3,9 @@
       <param name="execute_target" type="double" value="20." />
       <param name="contact_status_pub_rate" type="double" value="20." />
       <param name="distance_step" type="double" value="5" />
-      <param name="stop_distance" type="double" value="0.5" />
+      <param name="stop_distance" type="double" value="1.0" />
+      <param name="tilt_lock_distance" type="double" value="3" />
+      <param name="normal_xy_speed" type="double" value="12.0" />
+      <param name="approach_xy_speed" type="double" value="0.5" />
   </node>
 </launch>
