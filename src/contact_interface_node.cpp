@@ -194,7 +194,7 @@ void ContactInterfaceNode::change_status(ApproachStatus as, ContactStatus cs, Ta
   else if (as == ApproachStatus::LockingTilt && approach_status != ApproachStatus::LockingTilt)
   {
     delay_started = ros::Time::now();
-    publish_att_mode(core_px4_interface::AttMode::SLOW);
+    publish_att_mode(core_px4_interface::AttMode::ESTIMATE);
   }
   else if (as == ApproachStatus::FinalStage && approach_status != ApproachStatus::FinalStage)
   {
