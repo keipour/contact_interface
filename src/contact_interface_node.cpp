@@ -322,7 +322,7 @@ void ContactInterfaceNode::approach_getting_close() {
 }
 
 void ContactInterfaceNode::approach_locking_tilt() {
-    const float estimation_duration = 10;  // in seconds
+    const float estimation_duration = 2.0;  // in seconds
 
     if (ros::Time::now() - delay_started > ros::Duration(estimation_duration)) {
         change_status(ApproachStatus::FinalStage, ContactStatus::Approaching,
@@ -353,7 +353,7 @@ void ContactInterfaceNode::approach_final_stage() {
 }
 
 void ContactInterfaceNode::contact() {
-    const float contact_duration = 5.0;       // in seconds
+    const float contact_duration = 2.0;       // in seconds
     current_force = current_command.Force;    // in Newtons
     current_moment = current_command.Moment;  // in N.m
 
