@@ -233,7 +233,7 @@ void ContactInterfaceNode::change_status(ApproachStatus as, ContactStatus cs,
 }
 
 // -------------------------------------------------------------------------------------------
-// ------------------------------ Publisher Functions-----------------------------------------
+// ------------------------------ Publisher Functions ----------------------------------------
 // -------------------------------------------------------------------------------------------
 
 void ContactInterfaceNode::publish_status() {
@@ -311,10 +311,10 @@ void ContactInterfaceNode::approach_getting_close() {
     if (dist > dist_threshold * dist_threshold) {
         publish_pose_command(current_command.ContactPoint);
     } else {
-        if (is_dummy_test){
+        if (is_dummy_test) {
             change_status(ApproachStatus::GettingClose,
                           ContactStatus::InContact, TaskStatus::InProgress);
-        } else{
+        } else {
             change_status(ApproachStatus::LockingTilt,
                           ContactStatus::Approaching, TaskStatus::InProgress);
         }
@@ -353,7 +353,7 @@ void ContactInterfaceNode::approach_final_stage() {
 }
 
 void ContactInterfaceNode::contact() {
-    const float contact_duration = 5.0;         // in seconds
+    const float contact_duration = 5.0;       // in seconds
     current_force = current_command.Force;    // in Newtons
     current_moment = current_command.Moment;  // in N.m
 
