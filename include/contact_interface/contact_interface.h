@@ -43,6 +43,7 @@ private:
 
   // parameters
   float status_pub_rate, distance_step, stop_distance, tilt_lock_distance, normal_xy_speed, approach_xy_speed;
+  bool is_dummy_test;
 
   // variables
   bool is_offboard = false;
@@ -92,6 +93,7 @@ private:
   void contact();
   void fly_forward(const double dist_forward);
   void change_status(ApproachStatus as, ContactStatus cs, TaskStatus ts);
+  void process_depth_reading(float depth);
 
 public:
   ContactInterfaceNode(std::string node_name);

@@ -15,6 +15,7 @@ bool ContactInterfaceNode::initialize(){
   tilt_lock_distance = pnh->param("tilt_lock_distance", 2.0F);
   normal_xy_speed = pnh->param("normal_xy_speed", 12.0F);
   approach_xy_speed = pnh->param("approach_xy_speed", 0.5F);
+  is_dummy_test = pnh->param("is_dummy_test", false);
 
   // init subscribers
   pose_sub = nh->subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, &ContactInterfaceNode::pose_callback, this);
@@ -41,7 +42,7 @@ bool ContactInterfaceNode::execute()
     // just return if all the parameters are already set correctly
     if (contact_status == ContactStatus::None && task_status != TaskStatus::InProgress)
       return true;
-    
+
     contact_status = ContactStatus::None;
     if (task_status == TaskStatus::InProgress)
       task_status = TaskStatus::Aborted;
@@ -99,27 +100,39 @@ void ContactInterfaceNode::contact_command_callback(const contact_interface::Con
     publish_status();
     return;
   }
-  
+
   // Set the starting point to return to it later
   starting_pose = current_pose;
   current_command = *msg;
 
   // Set the task and contact statuses
   task_status = TaskStatus::InProgress;
-  contact_status = ContactStatus::Waiting; 
+  contact_status = ContactStatus::Waiting;
   approach_status = ApproachStatus::GettingClose;
+
+  if (is_dummy_test)
+  {
+    contact_status = ContactStatus::Approaching;
+    approach_status = ApproachStatus::FinalStage;
+    process_depth_reading(stop_distance + distance_step);
+  }
 }
 
 void ContactInterfaceNode::depth_callback(const geometry_msgs::Vector3Stamped::ConstPtr &msg)
 {
-  if ((contact_status != ContactStatus::Approaching && contact_status != ContactStatus::Waiting)
+  process_depth_reading(msg->vector.z);
+}
+
+void ContactInterfaceNode::process_depth_reading(float depth)
+{
+    if ((contact_status != ContactStatus::Approaching && contact_status != ContactStatus::Waiting)
    || task_status != TaskStatus::InProgress)
     return;
 
   // Read the current distance from the wall (in meters)
-  float dist = msg->vector.z / 100.F;
+  float dist = depth;
 
-  if (isnan(dist)) 
+  if (isnan(dist))
     return;
 
   if (dist <= stop_distance)
@@ -150,7 +163,7 @@ void ContactInterfaceNode::depth_callback(const geometry_msgs::Vector3Stamped::C
       dist_forward = std::min(dist - stop_distance, distance_step);
       fly_forward(dist_forward);
       break;
-  }  
+  }
 }
 
 void ContactInterfaceNode::heading_callback(const std_msgs::Float32::ConstPtr &msg)
@@ -194,11 +207,11 @@ void ContactInterfaceNode::change_status(ApproachStatus as, ContactStatus cs, Ta
   else if (as == ApproachStatus::LockingTilt && approach_status != ApproachStatus::LockingTilt)
   {
     delay_started = ros::Time::now();
-    publish_att_mode(core_px4_interface::AttMode::SLOW);
+    publish_att_mode(core_px4_interface::AttMode::ZERO_TILT);
   }
   else if (as == ApproachStatus::FinalStage && approach_status != ApproachStatus::FinalStage)
   {
-    publish_att_mode(core_px4_interface::AttMode::LOCK_TILT);
+    publish_att_mode(core_px4_interface::AttMode::ZERO_TILT);
     publish_max_xy_vel(approach_xy_speed);
   }
   else if (as == ApproachStatus::LockingTilt && approach_status != ApproachStatus::LockingTilt)
@@ -216,8 +229,8 @@ void ContactInterfaceNode::change_status(ApproachStatus as, ContactStatus cs, Ta
       publish_max_xy_vel(normal_xy_speed);
   }
 
-  if (as != approach_status)
-    ROS_WARN("AS: %d", (int)as);
+  // if (as != approach_status)
+  //   ROS_WARN("AS: %d", (int)as);
 
   contact_status = cs;
   task_status = ts;
@@ -263,7 +276,7 @@ void ContactInterfaceNode::publish_att_mode(const int mode)
   msg.Header.seq = 0;
   msg.Header.stamp = ros::Time::now();
   msg.Mode = mode;
-  ROS_ERROR("Att: %d", mode);
+  ROS_INFO("Att: %d", mode);
   att_mode_pub.publish(msg);
 }
 
@@ -271,7 +284,7 @@ void ContactInterfaceNode::publish_max_xy_vel(const float speed)
 {
   std_msgs::Float32 msg;
   msg.data = speed;
-  ROS_ERROR("Speed: %0.2f", speed);
+  ROS_INFO("Speed: %0.2f", speed);
   max_xy_vel_pub.publish(msg);
 }
 
@@ -287,11 +300,11 @@ void ContactInterfaceNode::approach()
     approach_getting_close();
     break;
   case ApproachStatus::LockingTilt:
-      approach_locking_tilt();
-      break;
+    approach_locking_tilt();
+    break;
   case ApproachStatus::FinalStage:
-      approach_final_stage();
-      break;
+    approach_final_stage();
+    break;
   }
 }
 
@@ -299,7 +312,7 @@ void ContactInterfaceNode::approach_getting_close()
 {
   current_force = 0;
   current_moment = 0;
-  
+
   double dx = current_pose.pose.position.x - current_command.ContactPoint.position.x;
   double dy = current_pose.pose.position.y - current_command.ContactPoint.position.y;
   double dz = current_pose.pose.position.z - current_command.ContactPoint.position.z;
@@ -312,7 +325,10 @@ void ContactInterfaceNode::approach_getting_close()
   }
   else
   {
-    change_status(ApproachStatus::LockingTilt, ContactStatus::Approaching, TaskStatus::InProgress);
+    if (is_dummy_test)
+      change_status(ApproachStatus::GettingClose, ContactStatus::InContact, TaskStatus::InProgress);
+    else
+      change_status(ApproachStatus::LockingTilt, ContactStatus::Approaching, TaskStatus::InProgress);
   }
 }
 
@@ -357,6 +373,7 @@ void ContactInterfaceNode::contact()
   {
     change_status(ApproachStatus::GettingClose, ContactStatus::Departing, TaskStatus::InProgress);
   }
+  ROS_WARN_THROTTLE(1, "%0.1f seconds in contact", (ros::Time::now() - delay_started).toSec());
 }
 
 void ContactInterfaceNode::depart()
